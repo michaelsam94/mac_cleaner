@@ -39,9 +39,16 @@ def ensure_sudo() -> tuple[bool, str]:
 
     try:
         result = subprocess.run(
-            ["sudo", "-v"],
+            ["sudo", "-n", "-v"],
+            capture_output=True,
+            text=True,
             check=False,
         )
+        if result.returncode != 0:
+            result = subprocess.run(
+                ["sudo", "-v"],
+                check=False,
+            )
     except subprocess.SubprocessError as exc:
         if progress:
             progress.advance()

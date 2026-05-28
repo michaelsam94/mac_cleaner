@@ -11,6 +11,7 @@ from mac_cleaner.cleaners.registry import filter_cleaners, list_categories
 from mac_cleaner.executor import ensure_sudo
 from mac_cleaner.reporter import console, print_banner, print_results, run_cleaners_with_progress
 from mac_cleaner.scheduler import (
+    format_sudoers_instructions,
     install_schedule,
     schedule_status,
     sudo_categories,
@@ -166,25 +167,39 @@ def schedule() -> None:
 @click.option(
     "--include-sudo",
     is_flag=True,
-    help="Include system categories that need sudo (may fail without a password).",
+    help="All categories; macOS admin password dialog on install and each run.",
+)
+@click.option(
+    "--unattended-full",
+    is_flag=True,
+    help="All categories with no prompts; requires sudoers setup (printed below).",
 )
 def schedule_install(
     days: int,
     category: tuple[str, ...],
     include_sudo: bool,
+    unattended_full: bool,
 ) -> None:
     """Register a LaunchAgent that runs mac-cleaner clean --execute -y on an interval."""
-    if not include_sudo:
+    if include_sudo and unattended_full:
+        console.print("[red]Use either --include-sudo or --unattended-full, not both.[/red]")
+        sys.exit(1)
+
+    if not include_sudo and not unattended_full:
         console.print(
             "[dim]Scheduling user-level categories only "
             f"(skipping sudo: {', '.join(sudo_categories())}).[/dim]"
         )
-        console.print("[dim]Use --include-sudo to add system categories.[/dim]\n")
+        console.print(
+            "[dim]Use --include-sudo (password each run) or "
+            "--unattended-full (sudoers, no prompts).[/dim]\n"
+        )
 
     ok, msg, plist_path = install_schedule(
         days,
         category or None,
-        include_sudo=include_sudo,
+        admin_prompt=include_sudo,
+        unattended_full=unattended_full,
     )
     if not ok:
         console.print(f"[red]{msg}[/red]")
@@ -192,16 +207,26 @@ def schedule_install(
 
     console.print(f"[green]Scheduled cleanup every {days} day(s).[/green]")
     console.print(f"LaunchAgent: [bold]{plist_path}[/bold]")
-    console.print(
-        "Runs: [bold]mac-cleaner clean --execute -y[/bold]"
-        + (" -c …" if category else " (non-sudo categories)")
-    )
-    console.print("\n[dim]Logs: ~/Library/Logs/mac-cleaner-scheduled.log[/dim]")
-    if include_sudo:
+    if unattended_full:
+        console.print("Runs: [bold]all categories[/bold], direct launchd (no password dialogs).")
         console.print(
-            "[yellow]Sudo categories may fail in the background "
-            "unless credentials are cached or configured in sudoers.[/yellow]"
+            "\n[yellow bold]Required one-time setup — passwordless sudo for cleanup commands:[/yellow bold]"
         )
+        console.print(f"[dim]{format_sudoers_instructions()}[/dim]")
+        console.print(
+            "[dim]After saving, verify with: sudo -n rm -h  (should not ask for a password)[/dim]"
+        )
+    elif include_sudo:
+        console.print(
+            "Runs: [bold]all categories[/bold] — macOS will ask for your admin password "
+            "now and on each scheduled run."
+        )
+    else:
+        console.print(
+            "Runs: [bold]mac-cleaner clean --execute -y[/bold]"
+            + (" -c …" if category else " (non-sudo categories)")
+        )
+    console.print("\n[dim]Logs: ~/Library/Logs/mac-cleaner-scheduled.log[/dim]")
 
 
 @schedule.command("uninstall")
@@ -225,9 +250,16 @@ def schedule_status_cmd() -> None:
     interval = f"every {days} day(s)" if days else "interval unknown"
     console.print(f"[green]Schedule installed[/green] ({loaded}, {interval})")
     console.print(f"Plist: [bold]{info['plist_path']}[/bold]")
+    if info.get("unattended_full"):
+        console.print("Mode: [bold]unattended full[/bold] (all categories, sudoers required)")
+    elif info.get("uses_admin_prompt"):
+        console.print("Mode: [bold]admin password prompt[/bold] each run (all categories)")
+        wrapper = info.get("wrapper_script")
+        if wrapper:
+            console.print(f"Wrapper: [dim]{wrapper}[/dim]")
     argv = info["program_arguments"]
     if argv:
-        console.print(f"Command: [dim]{' '.join(str(a) for a in argv)}[/dim]")
+        console.print(f"Launch: [dim]{' '.join(str(a) for a in argv)}[/dim]")
     console.print(f"Logs: [dim]{info['stdout_log']}[/dim]")
 
 

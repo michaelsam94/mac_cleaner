@@ -46,6 +46,12 @@ mac-cleaner categories
 # Run cleanup every 7 days without manual runs (launchd LaunchAgent)
 mac-cleaner schedule install --days 7
 
+# All categories, no prompts — prints sudoers lines to configure once
+mac-cleaner schedule install --days 7 --unattended-full
+
+# All categories, admin password dialog each run
+mac-cleaner schedule install --days 7 --include-sudo
+
 # Check or remove the schedule
 mac-cleaner schedule status
 mac-cleaner schedule uninstall
@@ -54,7 +60,7 @@ mac-cleaner schedule uninstall
 mac-cleaner schedule install --days 14 -c homebrew -c xcode
 ```
 
-Scheduled jobs run `mac-cleaner clean --execute -y` in the background. By default, **sudo categories are skipped** (`system-caches`, `system-logs`, `snapshots`) because launchd cannot prompt for a password. Use `--include-sudo` only if you have non-interactive sudo set up. Logs: `~/Library/Logs/mac-cleaner-scheduled.log`.
+Scheduled jobs run `mac-cleaner clean --execute -y` in the background. By default, **sudo categories are skipped** (`system-caches`, `system-logs`, `snapshots`). Use `--include-sudo` for full cleanup with a password dialog each run. Use `--unattended-full` for full cleanup with no dialogs after you add the printed `/etc/sudoers.d/mac-cleaner` rules. Logs: `~/Library/Logs/mac-cleaner-scheduled.log`.
 
 Or without installing:
 
