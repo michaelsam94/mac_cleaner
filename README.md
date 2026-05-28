@@ -4,7 +4,17 @@ Aggressive macOS CLI tool to scan and clean caches, logs, dev artifacts, and app
 
 ## Install
 
+### Homebrew (recommended)
+
 ```bash
+brew tap michaelsam94/tap
+brew install mac-cleaner
+```
+
+### From source
+
+```bash
+git clone https://github.com/michaelsam94/mac_cleaner.git
 cd mac_cleaner
 python3 -m venv .venv
 source .venv/bin/activate
@@ -77,3 +87,7 @@ python -m mac_cleaner scan
 ## Warning
 
 Aggressive mode deletes real files. Close browsers and Mail before cleaning those categories. Quit Xcode before cleaning DerivedData. Docker prune removes **all** unused images and volumes.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
