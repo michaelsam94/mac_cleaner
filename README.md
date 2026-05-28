@@ -42,7 +42,19 @@ mac-cleaner clean --execute -c xcode -c homebrew -c docker
 
 # List categories
 mac-cleaner categories
+
+# Run cleanup every 7 days without manual runs (launchd LaunchAgent)
+mac-cleaner schedule install --days 7
+
+# Check or remove the schedule
+mac-cleaner schedule status
+mac-cleaner schedule uninstall
+
+# Scheduled run with specific categories only
+mac-cleaner schedule install --days 14 -c homebrew -c xcode
 ```
+
+Scheduled jobs run `mac-cleaner clean --execute -y` in the background. By default, **sudo categories are skipped** (`system-caches`, `system-logs`, `snapshots`) because launchd cannot prompt for a password. Use `--include-sudo` only if you have non-interactive sudo set up. Logs: `~/Library/Logs/mac-cleaner-scheduled.log`.
 
 Or without installing:
 
