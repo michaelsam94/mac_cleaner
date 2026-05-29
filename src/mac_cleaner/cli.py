@@ -214,7 +214,7 @@ def schedule_install(
         )
         console.print(f"[dim]{format_sudoers_instructions()}[/dim]")
         console.print(
-            "[dim]After saving, verify with: sudo -n rm -h  (should not ask for a password)[/dim]"
+            "[dim]After saving, verify with: sudo -n rm -f /dev/null  (no password prompt)[/dim]"
         )
     elif include_sudo:
         console.print(
